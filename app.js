@@ -181,19 +181,21 @@ function searchLocation() {
         return;
     }
 
-    // 地址搜索
-    const geocoder = new AMap.Geocoder();
-    geocoder.getLocation(input, (status, result) => {
-        if (status === 'complete' && result.geocodes.length > 0) {
-            const geo = result.geocodes[0];
-            const lng = geo.location.getLng();
-            const lat = geo.location.getLat();
-            state.map.setCenter([lng, lat]);
-            state.map.setZoom(15);
-            showToast(`📍 已定位到: ${geo.formattedAddress}`);
-        } else {
-            showToast('❌ 未找到该位置');
-        }
+    // 地址搜索（异步加载插件）
+    AMap.plugin('AMap.Geocoder', function() {
+        const geocoder = new AMap.Geocoder();
+        geocoder.getLocation(input, (status, result) => {
+            if (status === 'complete' && result.geocodes.length > 0) {
+                const geo = result.geocodes[0];
+                const lng = geo.location.getLng();
+                const lat = geo.location.getLat();
+                state.map.setCenter([lng, lat]);
+                state.map.setZoom(15);
+                showToast(`📍 已定位到: ${geo.formattedAddress}`);
+            } else {
+                showToast('❌ 未找到该位置');
+            }
+        });
     });
 }
 
