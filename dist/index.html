@@ -212,7 +212,7 @@
         // 动态加载高德地图 API，并在加载完成后初始化应用
         function loadAmapScriptAndInit() {
             const script = document.createElement('script');
-            script.src = `https://webapi.amap.com/maps?v=2.0&key=170f60005b2534c9cc10618f939e7f20&plugin=AMap.Geocoder,AMap.PlaceSearch`;
+            script.src = `https://webapi.amap.com/maps?v=2.0&key=170f60005b2534c9cc10618f939e7f20`;
             script.onload = () => {
                 // 高德地图 API 加载完成后，再加载 app.js 并初始化
                 const appScript = document.createElement('script');
