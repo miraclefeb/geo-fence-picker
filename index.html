@@ -1,230 +1,639 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>地理范围圈选（高德）</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        
-        /* 地图容器 */
-        #mapContainer { width: 100%; height: 100%; }
-        
-        /* 左侧面板 */
-        .side-panel {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 360px;
-            height: 100%;
-            background: white;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        
-        /* 大头针列表项 */
-        .pin-item {
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .pin-item:hover {
-            background: #f0f7ff;
-        }
-        .pin-item.active {
-            background: #dbeafe;
-            border-left: 3px solid #3b82f6;
-        }
-        
-        /* 已保存项 */
-        .saved-item {
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .saved-item:hover {
-            background: #f0fdf4;
-        }
-        
-        /* 闪动动画 */
-        @keyframes pin-flash {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-        }
-        .pin-flashing {
-            animation: pin-flash 0.4s ease-in-out 3;
-        }
-        
-        /* 搜索框 */
-        .search-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
-        /* Tab 切换 */
-        .tab-btn {
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
-            color: #3b82f6;
-            border-bottom: 2px solid #3b82f6;
-            font-weight: 700;
-        }
-        
-        /* 操作按钮 */
-        .action-btn {
-            transition: all 0.15s;
-        }
-        .action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-        }
-        .action-btn:active {
-            transform: scale(0.97);
-        }
-        
-        /* 提示框 */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: #1e293b;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 9999;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地理范围圈选（高德）</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .app { display: flex; height: 100%; }
+    
+    /* 左侧面板 */
+    #sidebar {
+      width: 360px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+      z-index: 10;
+    }
+    
+    /* 头部 */
+    .sidebar-head {
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .sidebar-head h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .sidebar-head p { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+    
+    /* 搜索区 */
+    .search-area {
+      padding: 12px 16px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .search-area label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .search-row { display: flex; gap: 8px; }
+    .search-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    
+    /* 按钮 */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
+    
+    /* Tab 切换 */
+    .tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: #94a3b8;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; font-weight: 700; }
+    
+    /* 列表区域 */
+    .list-area { flex: 1; overflow-y: auto; padding: 8px; }
+    .list-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: #cbd5e1; text-align: center;
+    }
+    .list-empty .icon { font-size: 40px; margin-bottom: 8px; }
+    .list-empty .title { font-size: 13px; font-weight: 600; }
+    .list-empty .sub { font-size: 11px; margin-top: 4px; }
+    
+    /* 大头针列表项 */
+    .pin-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; margin-bottom: 4px;
+      background: white; border-radius: 10px; border: 1px solid #f1f5f9;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pin-item:hover { background: #f0f7ff; border-color: #dbeafe; }
+    .pin-item.active { background: #dbeafe; border-color: #93c5fd; }
+    .pin-idx {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #3b82f6; color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .pin-coord { flex: 1; font-family: ui-monospace, monospace; font-size: 12px; color: #475569; }
+    .pin-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    
+    /* 已保存列表项 */
+    .saved-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px; margin-bottom: 4px;
+      background: white; border-radius: 10px; border: 1px solid #f1f5f9;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .saved-item:hover { background: #f0fdf4; border-color: #bbf7d0; }
+    .saved-name { font-size: 13px; font-weight: 600; color: #334155; }
+    .saved-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    
+    /* 底部操作栏 */
+    .sidebar-foot {
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+    }
+    .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .btn-row:last-child { margin-bottom: 0; }
+    .btn-row .btn { flex: 1; }
+    
+    /* 消息提示 */
+    #msg { font-size: 11px; line-height: 1.5; padding: 8px 16px; min-height: 20px; }
+    #msg.error { color: #dc2626; background: #fef2f2; }
+    #msg.ok { color: #16a34a; background: #f0fdf4; }
+    
+    /* 地图 */
+    #map { flex: 1; min-width: 0; height: 100%; }
+    
+    /* Toast 提示 */
+    .toast {
+      position: fixed; top: 20px; left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #1e293b; color: white;
+      padding: 12px 24px; border-radius: 12px;
+      font-size: 14px; font-weight: 500; z-index: 9999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
-<body class="bg-slate-100">
-    <!-- 提示框 -->
-    <div id="toast" class="toast"></div>
+<body>
+  <div id="toast" class="toast"></div>
+  
+  <div class="app">
+    <aside id="sidebar">
+      <!-- 头部 -->
+      <div class="sidebar-head">
+        <h1>📍 地理范围圈选</h1>
+        <p>输入地址定位到目标区域，点击地图钉入大头针。至少3个点形成闭合范围。</p>
+      </div>
+      
+      <!-- 搜索区 -->
+      <div class="search-area">
+        <label>地址 / 坐标定位</label>
+        <div class="search-row">
+          <input type="text" id="address" class="search-input" placeholder="输入地址，如：长沙市岳麓区梅溪湖" autocomplete="off">
+          <button type="button" id="btnGeocode" class="btn btn-primary">定位</button>
+        </div>
+      </div>
+      
+      <!-- 消息 -->
+      <div id="msg"></div>
+      
+      <!-- Tab -->
+      <div class="tabs">
+        <button type="button" id="tabPins" class="tab-btn active" onclick="switchTab('pins')">📌 大头针 (<span id="pinCount">0</span>)</button>
+        <button type="button" id="tabSaved" class="tab-btn" onclick="switchTab('saved')">💾 已保存 (<span id="savedCount">0</span>)</button>
+      </div>
+      
+      <!-- 大头针列表 -->
+      <div id="pinsList" class="list-area">
+        <div id="pinsEmpty" class="list-empty">
+          <span class="icon">📍</span>
+          <span class="title">点击地图添加大头针</span>
+          <span class="sub">大头针会自动连线形成范围</span>
+        </div>
+        <div id="pinsContent"></div>
+      </div>
+      
+      <!-- 已保存列表 -->
+      <div id="savedList" class="list-area" style="display:none">
+        <div id="savedEmpty" class="list-empty">
+          <span class="icon">💾</span>
+          <span class="title">暂无保存的范围</span>
+          <span class="sub">添加大头针后可保存</span>
+        </div>
+        <div id="savedContent"></div>
+      </div>
+      
+      <!-- 底部操作栏 -->
+      <div class="sidebar-foot">
+        <div class="btn-row">
+          <button type="button" class="btn btn-success" onclick="saveCurrentPins()">💾 保存</button>
+          <button type="button" class="btn btn-warning" onclick="exportCSV()">📤 导出</button>
+          <button type="button" class="btn btn-danger" onclick="clearAllPins()">🗑️ 清空</button>
+        </div>
+      </div>
+    </aside>
     
-    <!-- 地图 -->
-    <div id="mapContainer"></div>
-    
-    <!-- 左侧面板 -->
-    <div class="side-panel">
-        <!-- 标题 -->
-        <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-5 py-4">
-            <h1 class="text-lg font-bold flex items-center gap-2">
-                📍 地理范围圈选
-            </h1>
-            <p class="text-blue-100 text-xs mt-1">点击地图钉入大头针，圈选地理范围</p>
-        </div>
-        
-        <!-- 搜索定位 -->
-        <div class="px-4 py-3 border-b border-slate-100">
-            <div class="flex gap-2">
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    placeholder="输入地址或坐标定位，如：天安门" 
-                    class="search-input flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                >
-                <button 
-                    onclick="searchLocation()" 
-                    class="action-btn bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-600"
-                >
-                    定位
-                </button>
-            </div>
-        </div>
-        
-        <!-- Tab 切换 -->
-        <div class="flex border-b border-slate-100">
-            <button 
-                id="tabPins" 
-                onclick="switchTab('pins')" 
-                class="tab-btn active flex-1 py-3 text-sm text-center"
-            >
-                📌 大头针 (<span id="pinCount">0</span>)
-            </button>
-            <button 
-                id="tabSaved" 
-                onclick="switchTab('saved')" 
-                class="tab-btn flex-1 py-3 text-sm text-center text-slate-400"
-            >
-                💾 已保存 (<span id="savedCount">0</span>)
-            </button>
-        </div>
-        
-        <!-- 大头针列表 -->
-        <div id="pinsList" class="flex-1 overflow-y-auto">
-            <div id="pinsEmpty" class="flex flex-col items-center justify-center h-full text-slate-300">
-                <p class="text-4xl mb-3">📍</p>
-                <p class="text-sm font-bold">点击地图添加大头针</p>
-                <p class="text-xs mt-1">大头针会自动连线形成范围</p>
-            </div>
-            <div id="pinsContent" class="hidden"></div>
-        </div>
-        
-        <!-- 已保存列表 -->
-        <div id="savedList" class="flex-1 overflow-y-auto hidden">
-            <div id="savedEmpty" class="flex flex-col items-center justify-center h-full text-slate-300">
-                <p class="text-4xl mb-3">💾</p>
-                <p class="text-sm font-bold">暂无保存的范围</p>
-                <p class="text-xs mt-1">添加大头针后可保存</p>
-            </div>
-            <div id="savedContent" class="hidden"></div>
-        </div>
-        
-        <!-- 底部操作栏 -->
-        <div class="border-t border-slate-100 px-4 py-3 bg-white">
-            <div class="flex gap-2">
-                <button 
-                    onclick="saveCurrentPins()" 
-                    class="action-btn flex-1 bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-600"
-                >
-                    💾 保存
-                </button>
-                <button 
-                    onclick="exportCSV()" 
-                    class="action-btn flex-1 bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-amber-600"
-                >
-                    📤 导出
-                </button>
-                <button 
-                    onclick="clearAllPins()" 
-                    class="action-btn bg-red-100 text-red-500 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-200"
-                >
-                    🗑️
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 高德地图 JS API -->
-    <script>
-        // 动态加载高德地图 API，并在加载完成后初始化应用
-        function loadAmapScriptAndInit() {
-            const script = document.createElement('script');
-            script.src = `https://webapi.amap.com/maps?v=2.0&key=170f60005b2534c9cc10618f939e7f20`;
-            script.onload = () => {
-                // 高德地图 API 加载完成后，再加载 app.js 并初始化
-                const appScript = document.createElement('script');
-                appScript.src = 'app.js';
-                document.head.appendChild(appScript);
-            };
-            script.onerror = () => {
-                alert('加载高德地图 JS API 失败，请检查 Key 与 Referer 白名单。');
-            };
-            document.head.appendChild(script);
+    <div id="map"></div>
+  </div>
+
+  <script>
+    (function () {
+      // ==========================================
+      // 全局状态
+      // ==========================================
+      var AMAP_KEY = "170f60005b2534c9cc10618f939e7f20";
+      var SAVE_KEY = "geoFenceSaved";
+      
+      var map = null;
+      var polygon = null;
+      var pins = [];
+      var nextId = 1;
+      var mapClickBound = false;
+      var selectedPinId = null;
+      var savedGroups = [];
+      var currentTab = 'pins';
+
+      var addressInput = document.getElementById("address");
+      var msgEl = document.getElementById("msg");
+
+      // ==========================================
+      // 工具函数
+      // ==========================================
+      function setMsg(text, cls) {
+        msgEl.className = cls || "";
+        msgEl.textContent = text || "";
+      }
+
+      function showToast(msg) {
+        var toast = document.getElementById("toast");
+        toast.textContent = msg;
+        toast.classList.add("show");
+        setTimeout(function() { toast.classList.remove("show"); }, 2000);
+      }
+
+      function loadScript(key, cb) {
+        if (window.AMap) { cb(); return; }
+        var s = document.createElement("script");
+        s.src = "https://webapi.amap.com/maps?v=2.0&key=" + encodeURIComponent(key);
+        s.onload = function () { cb(); };
+        s.onerror = function () {
+          setMsg("加载高德地图 JS API 失败，请检查 Key。", "error");
+        };
+        document.head.appendChild(s);
+      }
+
+      // ==========================================
+      // 多边形相关
+      // ==========================================
+      function ensureClosedPath(path) {
+        if (path.length < 2) return path.slice();
+        var a = path[0], b = path[path.length - 1];
+        if (a[0] === b[0] && a[1] === b[1]) return path.slice();
+        return path.concat([[a[0], a[1]]]);
+      }
+
+      function toClockwiseOrder(ringOpen) {
+        if (ringOpen.length < 3) return ringOpen.slice();
+        var ring = ringOpen.slice();
+        var twice = 0, n = ring.length;
+        for (var i = 0; i < n; i++) {
+          var j = (i + 1) % n;
+          twice += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
         }
-        window.onload = loadAmapScriptAndInit;
-    </script>
+        if (twice > 0) ring.reverse();
+        return ring;
+      }
+
+      function refreshPolygon() {
+        if (!map) return;
+        if (polygon) { map.remove(polygon); polygon = null; }
+        if (pins.length < 3) {
+          if (pins.length === 0) setMsg("点击地图添加大头针。", "");
+          else setMsg("至少 3 个点形成闭合范围，当前 " + pins.length + " 个点。", "");
+          return;
+        }
+        var path = pins.map(function (x) { return [x.lng, x.lat]; });
+        var closed = ensureClosedPath(path);
+        polygon = new AMap.Polygon({
+          path: closed.map(function (p) { return new AMap.LngLat(p[0], p[1]); }),
+          strokeColor: "#3b82f6",
+          strokeWeight: 2,
+          strokeOpacity: 0.9,
+          fillColor: "#3b82f6",
+          fillOpacity: 0.15,
+          zIndex: 50
+        });
+        map.add(polygon);
+        AMap.plugin("AMap.GeometryUtil", function () {
+          var ring = closed.map(function (p) { return [p[0], p[1]]; });
+          var areaM2 = Math.abs(AMap.GeometryUtil.ringArea(ring));
+          var areaKm2 = areaM2 / 1e6;
+          setMsg("✅ " + pins.length + " 个顶点，约 " + areaKm2.toFixed(4) + " km²", "ok");
+        });
+      }
+
+      // ==========================================
+      // 大头针管理
+      // ==========================================
+      function addPin(lng, lat) {
+        if (!map) return;
+        var id = nextId++;
+        var marker = new AMap.Marker({
+          position: new AMap.LngLat(lng, lat),
+          draggable: true,
+          cursor: "pointer",
+          label: {
+            content: '<div style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">' + id + '</div>',
+            direction: 'top',
+            offset: new AMap.Pixel(0, -5)
+          },
+          zIndex: 110
+        });
+        marker.setMap(map);
+        marker.on("click", function (e) {
+          if (e && e.stopPropagation) e.stopPropagation();
+          selectPin(id);
+        });
+        marker.on("dragend", function () {
+          var p = marker.getPosition();
+          for (var k = 0; k < pins.length; k++) {
+            if (pins[k].id === id) {
+              pins[k].lng = p.getLng();
+              pins[k].lat = p.getLat();
+              break;
+            }
+          }
+          refreshPolygon();
+          refreshPinList();
+        });
+        pins.push({ id: id, lng: lng, lat: lat, marker: marker });
+        selectedPinId = id;
+        refreshPolygon();
+        refreshPinList();
+      }
+
+      function removePin(id) {
+        if (selectedPinId === id) selectedPinId = null;
+        for (var i = 0; i < pins.length; i++) {
+          if (pins[i].id === id) {
+            if (map && pins[i].marker) map.remove(pins[i].marker);
+            pins.splice(i, 1);
+            break;
+          }
+        }
+        refreshPolygon();
+        refreshPinList();
+      }
+
+      window.clearAllPins = function () {
+        if (!map || pins.length === 0) return;
+        selectedPinId = null;
+        pins.forEach(function (p) { if (p.marker) map.remove(p.marker); });
+        pins = [];
+        if (polygon) { map.remove(polygon); polygon = null; }
+        setMsg("已清空。", "");
+        refreshPinList();
+        showToast("🗑️ 已清空所有大头针");
+      };
+
+      function selectPin(id) {
+        if (!map) return;
+        selectedPinId = id;
+        var target = null;
+        pins.forEach(function (p) { if (p.id === id) target = p; });
+        if (target && target.marker) {
+          map.panTo(target.marker.getPosition());
+          target.marker.setAnimation("AMAP_ANIMATION_BOUNCE");
+          setTimeout(function() { target.marker.setAnimation("AMAP_ANIMATION_NONE"); }, 1500);
+        }
+        refreshPinList();
+      }
+
+      function movePin(index, delta) {
+        var j = index + delta;
+        if (j < 0 || j >= pins.length) return;
+        var t = pins[index]; pins[index] = pins[j]; pins[j] = t;
+        refreshPolygon();
+        refreshPinList();
+      }
+
+      // ==========================================
+      // UI 渲染
+      // ==========================================
+      function refreshPinList() {
+        var emptyEl = document.getElementById("pinsEmpty");
+        var contentEl = document.getElementById("pinsContent");
+        var countEl = document.getElementById("pinCount");
+        countEl.textContent = pins.length;
+
+        if (pins.length === 0) {
+          emptyEl.style.display = "flex";
+          contentEl.innerHTML = "";
+          return;
+        }
+        emptyEl.style.display = "none";
+        contentEl.innerHTML = "";
+
+        pins.forEach(function (pin, index) {
+          var row = document.createElement("div");
+          row.className = "pin-item" + (pin.id === selectedPinId ? " active" : "");
+          row.innerHTML =
+            '<span class="pin-idx">' + (index + 1) + '</span>' +
+            '<span class="pin-coord">' + pin.lng.toFixed(6) + ', ' + pin.lat.toFixed(6) + '</span>' +
+            '<span class="pin-actions">' +
+              (index > 0 ? '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();window._movePin(' + index + ',-1)">↑</button>' : '') +
+              (index < pins.length - 1 ? '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();window._movePin(' + index + ',1)">↓</button>' : '') +
+              '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();window._removePin(' + pin.id + ')">删</button>' +
+            '</span>';
+          row.addEventListener("click", function () { selectPin(pin.id); });
+          contentEl.appendChild(row);
+        });
+      }
+
+      function refreshSavedList() {
+        var emptyEl = document.getElementById("savedEmpty");
+        var contentEl = document.getElementById("savedContent");
+        var countEl = document.getElementById("savedCount");
+        countEl.textContent = savedGroups.length;
+
+        if (savedGroups.length === 0) {
+          emptyEl.style.display = "flex";
+          contentEl.innerHTML = "";
+          return;
+        }
+        emptyEl.style.display = "none";
+        contentEl.innerHTML = "";
+
+        savedGroups.forEach(function (group) {
+          var row = document.createElement("div");
+          row.className = "saved-item";
+          row.innerHTML =
+            '<div>' +
+              '<div class="saved-name">' + group.name + '</div>' +
+              '<div class="saved-meta">' + group.coordinates.length + ' 个坐标 · ' + new Date(group.createdAt).toLocaleDateString() + '</div>' +
+            '</div>' +
+            '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();window._deleteSaved(' + group.id + ')">删除</button>';
+          row.addEventListener("click", function () { loadSavedGroup(group.id); });
+          contentEl.appendChild(row);
+        });
+      }
+
+      // ==========================================
+      // Tab 切换
+      // ==========================================
+      window.switchTab = function (tab) {
+        currentTab = tab;
+        document.getElementById("tabPins").className = "tab-btn" + (tab === "pins" ? " active" : "");
+        document.getElementById("tabSaved").className = "tab-btn" + (tab === "saved" ? " active" : "");
+        document.getElementById("pinsList").style.display = tab === "pins" ? "" : "none";
+        document.getElementById("savedList").style.display = tab === "saved" ? "" : "none";
+      };
+
+      // ==========================================
+      // 保存 / 加载
+      // ==========================================
+      window.saveCurrentPins = function () {
+        if (pins.length === 0) { showToast("⚠️ 没有大头针可以保存"); return; }
+        var name = prompt("给这个范围起个名字：", "范围 " + (savedGroups.length + 1));
+        if (!name) return;
+        savedGroups.push({
+          id: Date.now(),
+          name: name,
+          coordinates: pins.map(function(p) { return [p.lng, p.lat]; }),
+          createdAt: new Date().toISOString()
+        });
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(savedGroups)); } catch(e) {}
+        refreshSavedList();
+        showToast("💾 已保存: " + name);
+      };
+
+      function loadSavedGroup(groupId) {
+        var group = null;
+        savedGroups.forEach(function(g) { if (g.id === groupId) group = g; });
+        if (!group) return;
+        // 清除当前
+        selectedPinId = null;
+        pins.forEach(function(p) { if (p.marker) map.remove(p.marker); });
+        pins = [];
+        nextId = 1;
+        if (polygon) { map.remove(polygon); polygon = null; }
+        // 加载
+        group.coordinates.forEach(function(c) { addPin(c[0], c[1]); });
+        if (polygon) map.setFitView([polygon], false, [20, 20, 20, 380]);
+        switchTab("pins");
+        showToast("📂 已加载: " + group.name);
+      }
+
+      window._deleteSaved = function (groupId) {
+        if (!confirm("确定删除？")) return;
+        savedGroups = savedGroups.filter(function(g) { return g.id !== groupId; });
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(savedGroups)); } catch(e) {}
+        refreshSavedList();
+        showToast("🗑️ 已删除");
+      };
+
+      // ==========================================
+      // 导出
+      // ==========================================
+      window.exportCSV = function () {
+        if (pins.length === 0) { showToast("⚠️ 没有大头针可以导出"); return; }
+        var ringOpen = pins.map(function (p) { return [p.lng, p.lat]; });
+        var cw = toClockwiseOrder(ringOpen);
+        var body = cw.map(function(p) { return "(" + p[0] + "," + p[1] + ")"; }).join(",");
+        var csv = "coordinates\n\"" + body.replace(/"/g, '""') + "\"\n";
+        var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "geo-fence-" + new Date().toISOString().slice(0,10) + ".csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+        navigator.clipboard.writeText(body).catch(function(){});
+        showToast("✅ 已导出 CSV 并复制到剪贴板");
+      };
+
+      // 暴露给 HTML onclick
+      window._removePin = removePin;
+      window._movePin = movePin;
+
+      // ==========================================
+      // 搜索定位
+      // ==========================================
+      function goToAddress() {
+        var addr = addressInput.value.trim();
+        if (!addr) { setMsg("请输入地址或地点名称。", "error"); return; }
+        
+        // 坐标格式
+        var coordMatch = addr.match(/^([\d.]+)\s*[,，]\s*([\d.]+)$/);
+        if (coordMatch) {
+          var lng = parseFloat(coordMatch[1]);
+          var lat = parseFloat(coordMatch[2]);
+          initMap(function() {
+            map.setCenter([lng, lat]);
+            map.setZoom(17);
+            setMsg("已定位到坐标 (" + lng.toFixed(4) + ", " + lat.toFixed(4) + ")", "ok");
+          });
+          return;
+        }
+        
+        // 地址搜索
+        initMap(function () {
+          AMap.plugin("AMap.Geocoder", function () {
+            var geocoder = new AMap.Geocoder({ city: "全国" });
+            geocoder.getLocation(addr, function (status, result) {
+              if (status === "complete" && result.geocodes && result.geocodes.length) {
+                var g = result.geocodes[0];
+                var loc = g.location;
+                if (loc && typeof loc.getLng === "function") {
+                  map.setCenter(loc);
+                } else if (loc && loc.lng != null) {
+                  map.setCenter([loc.lng, loc.lat]);
+                } else {
+                  setMsg("地理编码返回格式异常。", "error");
+                  return;
+                }
+                map.setZoom(17);
+                var label = g.formattedAddress || addr;
+                setMsg("✅ 已定位：" + label, "ok");
+                showToast("📍 " + label);
+              } else {
+                setMsg("未找到该地点，请换更具体的地址。", "error");
+              }
+            });
+          });
+        });
+      }
+
+      // ==========================================
+      // 地图初始化
+      // ==========================================
+      function initMap(cb) {
+        loadScript(AMAP_KEY, function () {
+          if (!map) {
+            map = new AMap.Map("map", {
+              zoom: 15,
+              center: [116.397452, 39.909187],
+              viewMode: "2D"
+            });
+            // 点击地图添加大头针
+            map.on("click", function (e) {
+              addPin(e.lnglat.getLng(), e.lnglat.getLat());
+            });
+            // 添加控件
+            AMap.plugin(["AMap.ToolBar", "AMap.Scale"], function () {
+              map.addControl(new AMap.ToolBar());
+              map.addControl(new AMap.Scale());
+            });
+          }
+          if (cb) cb();
+        });
+      }
+
+      // ==========================================
+      // 事件绑定 & 初始化
+      // ==========================================
+      document.getElementById("btnGeocode").addEventListener("click", goToAddress);
+      addressInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); goToAddress(); }
+      });
+
+      // 加载已保存数据
+      try {
+        var saved = localStorage.getItem(SAVE_KEY);
+        if (saved) { savedGroups = JSON.parse(saved); refreshSavedList(); }
+      } catch(e) {}
+
+      // 自动初始化地图
+      initMap(function () {
+        setMsg("地图已就绪，点击地图添加大头针。", "ok");
+      });
+
+    })();
+  </script>
 </body>
 </html>
