@@ -199,13 +199,7 @@ function searchLocation() {
     });
 }
 
-// 回车搜索
-document.getElementById('searchInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        searchLocation();
-    }
-});
+
 
 // ==========================================
 // 5. 导出 CSV
@@ -439,8 +433,16 @@ function showToast(msg) {
 }
 
 // ==========================================
-// 8. 初始化
+// 8. 初始化（由 index.html 动态加载后自动执行）
 // ==========================================
-window.onload = function() {
+(function() {
     initMap();
-};
+    
+    // 回车搜索
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchLocation();
+        }
+    });
+})();
