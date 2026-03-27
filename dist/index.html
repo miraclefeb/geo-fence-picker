@@ -296,6 +296,16 @@
 
       function refreshPolygon() {
         if (!map) return;
+        // 同步更新地图上所有大头针的编号标签
+        pins.forEach(function(pin, idx) {
+          if (pin.marker) {
+            pin.marker.setLabel({
+              content: '<div style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">' + (idx + 1) + '</div>',
+              direction: 'top',
+              offset: new AMap.Pixel(0, -5)
+            });
+          }
+        });
         if (polygon) { map.remove(polygon); polygon = null; }
         if (pins.length < 3) {
           if (pins.length === 0) setMsg("点击地图添加大头针。", "");
@@ -328,12 +338,13 @@
       function addPin(lng, lat) {
         if (!map) return;
         var id = nextId++;
+        var seq = pins.length + 1;
         var marker = new AMap.Marker({
           position: new AMap.LngLat(lng, lat),
           draggable: true,
           cursor: "pointer",
           label: {
-            content: '<div style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">' + id + '</div>',
+            content: '<div style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">' + seq + '</div>',
             direction: 'top',
             offset: new AMap.Pixel(0, -5)
           },
@@ -380,6 +391,7 @@
         selectedPinId = null;
         pins.forEach(function (p) { if (p.marker) map.remove(p.marker); });
         pins = [];
+        nextId = 1;
         if (polygon) { map.remove(polygon); polygon = null; }
         setMsg("已清空。", "");
         refreshPinList();
